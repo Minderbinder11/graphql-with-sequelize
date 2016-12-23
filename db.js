@@ -2,16 +2,21 @@ import Sequelize from 'sequelize';
 import Faker from 'faker';
 import _ from 'lodash';
 
+
+// he assumes we already have a DB named relay
 const Conn = new Sequelize(
-  'relay',
-  'postgres',
-  'postgres',
+  'nexus', //relay',  this is the name of the database
+  'root',//'postgres', username
+  'root',//'postgres', password
   {
-    dialect: 'postgres',
+    dialect: 'mysql', //'postgres',
     host: 'localhost'
   }
+
+  // what does pool mean???
 );
 
+// this defines the tables in the DB
 const Person = Conn.define('person', {
   firstName: {
     type: Sequelize.STRING,
@@ -26,23 +31,59 @@ const Person = Conn.define('person', {
     validate: {
       isEmail: true
     }
+    // check out sequalize validate functions
+    // later will add address, password hash, and other stuff like that
   }
 });
 
-const Post = Conn.define('post', {
-  title: {
+const Contact = Conn.define('contact', {
+  company: {
     type: Sequelize.STRING,
     allowNull: false
   },
-  content: {
+  name: {
     type: Sequelize.STRING,
     allowNull: false
+  },
+  email: {
+    type: Sequelize.STRING,
+    validate: {
+      isEmail: true
+    }
+  },
+  phone: {
+    type: Sequelize.STRING,
+    allowNUll: true
   }
 });
 
+const Job = Conn.define('job', {
+  job_title: {
+    type: Sequelize.STRING,
+    allowNull: false
+  },
+  company: {
+    type: Sequelize.STRING,
+    allowNull: false
+  },
+  snippet: {
+    type:Sequelize.TEXT,
+    allowNull: false
+  },
+  applicant: {
+    type: Sequelize.STRING,
+    allowNull: false
+  }
+  // will add more fileds later
+});
+
+
 // Relations
-Person.hasMany(Post);
-Post.belongsTo(Person);
+Person.hasMany(Job);
+Job.belongsTo(Person);
+
+Job.hasMany(Contact);
+Contact.belongsTo(Job);
 
 Conn.sync({ force: true }).then(()=> {
   _.times(10, ()=> {
@@ -51,11 +92,26 @@ Conn.sync({ force: true }).then(()=> {
       lastName: Faker.name.lastName(),
       email: Faker.internet.email()
     }).then(person => {
-      return person.createPost({
-        title: `Sample post by ${person.firstName}`,
-        content: 'here is some content'
+    // return _.times(5, () => {
+         return person.createJob({
+          applicant: person.firstName,
+          job_title: Faker.lorem.words(),
+          company: Faker.company.companyName(),
+          snippet: Faker.company.catchPhrase()
+        });
+      //});
+    }).then( job => {
+      //console.log("job: ", job);
+      return job.createContact({
+        company: Faker.name.firstName(),  //job.company 
+        name: Faker.name.firstName(),
+        email: Faker.internet.email(),
+        phone: Faker.internet.email()
       });
-    });
+    })
+    .catch( (error) => {
+      console.log(error);
+    });   // this is where its going to get complicated
   });
 });
 

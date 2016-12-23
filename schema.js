@@ -1,4 +1,4 @@
-import {
+ import {
   GraphQLObjectType,
   GraphQLString,
   GraphQLInt,
@@ -9,27 +9,40 @@ import {
 
 import Db from './db';
 
-const Post = new GraphQLObjectType({
-  name: 'Post',
-  description: 'Blog post',
-  fields () {
-    return {
-      title: {
-        type: GraphQLString,
-        resolve (post) {
-          return post.title;
+
+const Job = new GraphQLObjectType({
+  name: 'Job',
+  description: 'This represents a Job',
+  fields: () => {
+      return {
+      id: {
+        type: GraphQLInt,
+        resolve (job) {
+          return job.id;
         }
       },
-      content: {
+      job_title: {
         type: GraphQLString,
-        resolve (post) {
-          return post.content;
+        resolve (job) {
+          return job.job_title;
+        }
+      },
+      company: {
+        type: GraphQLString,
+        resolve (job) {
+          return job.company;
+        }
+      },
+      snippet: {
+        type: GraphQLString,
+        resolve (job) {
+          return job.snippet;
         }
       },
       person: {
         type: Person,
-        resolve (post) {
-          return post.getPerson();
+        resolve (job) {
+          return job.getPerson();
         }
       }
     };
@@ -65,16 +78,19 @@ const Person = new GraphQLObjectType({
           return person.email;
         }
       },
-      posts: {
-        type: new GraphQLList(Post),
+      jobs: {  
+        type: new GraphQLList(Job),
         resolve (person) {
-          return person.getPosts();
+          return person.getJobs();  // we can use this, because it is provided to us from Sequalize when we set the 
+          // relationships of the dbs.
         }
       }
     };
   }
 });
 
+
+// these are the public API methods
 const Query = new GraphQLObjectType({
   name: 'Query',
   description: 'Root query object',
@@ -94,10 +110,21 @@ const Query = new GraphQLObjectType({
           return Db.models.person.findAll({ where: args });
         }
       },
-      posts: {
-        type: new GraphQLList(Post),
+      jobs: {
+        type: new GraphQLList(Job),
+        args: {
+          id: {
+            type: GraphQLInt
+          },
+          job_title: {
+            type: GraphQLString
+          },
+          company: {
+            type: GraphQLString
+          }
+        },
         resolve (root, args) {
-          return Db.models.post.findAll({ where: args });
+          return Db.models.job.findAll({ where: args });
         }
       }
     };
